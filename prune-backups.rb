@@ -14,7 +14,6 @@ Log.level = :info
 require 'lib/config.rb'
 require 'lib/constants.rb'
 
-now = Time.now
 
 $config[:targets].each do |target, options|
 
@@ -29,6 +28,11 @@ $config[:targets].each do |target, options|
   # make sure the files are sorted first (newest first)
   Pathname.new(target).each_child.sort{|a, b| b.mtime <=> a.mtime }.each do |file|
 
+#    puts
+#    Log.info("last_kept: #{last_kept}", last_kept ? last_kept.mtime : nil)
+#    Log.info("last #{last}", last ? last.mtime : nil)
+#    Log.info("proc #{file}", file.mtime)
+
     # allways keep newest backup
     unless last
       last_kept = last = file
@@ -39,9 +43,6 @@ $config[:targets].each do |target, options|
 
       # mtime of file is within setting for interval
       if $config[:keep][interval] and file.mtime >= $config[:keep][interval]
-
-        Log.info("#{interval} proc #{file}")
-
         max_age = case interval
                   when :daily
                     Constants::Time::DAY
@@ -54,27 +55,21 @@ $config[:targets].each do |target, options|
                   end
 
         # still within max_age, try next file
-        if (last_kept.mtime - file.mtime) < max_age
+        if (last_kept.mtime - file.mtime) <= max_age
           if last != last_kept
-            Log.info("#{interval} delete: #{last}")
-            last = file
-            break
-          end
-        
-        # equal to max_age
-        elsif (last_kept.mtime - file.mtime) == max_age
-          if last != last_kept
-            Log.info("#{interval} delete: #{last}")
+            Log.warn("#{interval} delete: #{last}")
+            last.delete
           end
 
-          Log.info("#{interval} keep: #{file}")
-          last_kept = last = file
-          break
-
-        # over max_age
+        # over max_age, use last
         else
-          # continue here..
+            #Log.info("#{interval} keep: #{last}")
+            last_kept = last
         end
+        # update pointer to last file object
+        last = file
+        # avoid going into next interval
+        break
       end
     end
   end
