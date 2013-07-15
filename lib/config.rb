@@ -5,6 +5,7 @@ require 'yaml'
 default_options = {
   :color => true,
   :verbose => false,
+  :dryrun => false,
   :configfile => '/etc/prune-backups.yml',
   :keep => {
     :daily => '7d',
@@ -17,6 +18,7 @@ options = default_options
 OptionParser.new do |opts|
   opts.banner = "Usage: syncagent.rb [options]"
   opts.on('-v', '--verbose', 'Run verbosely') { options[:verbose] = true }
+  opts.on('--dry-run', 'Do not delete anything') { options[:dryrun] = false }
   opts.on('-f', '--configfile PATH', String, 'Set config file') {|path| options[:configfile] = path }
 end.parse!
 
