@@ -26,23 +26,23 @@ $config[:targets].each do |target, options|
   last_kept = last = nil
 
   # make sure the files are sorted first (newest first)
-  Pathname.new(target).each_child.sort{|a, b| b.mtime <=> a.mtime }.each do |file|
+  Pathname.new(target).each_child.sort{|a, b| b.mtime <=> a.mtime }.each do |entry|
 
-#    puts
-#    Log.info("last_kept: #{last_kept}", last_kept ? last_kept.mtime : nil)
-#    Log.info("last #{last}", last ? last.mtime : nil)
-#    Log.info("proc #{file}", file.mtime)
+    # only work with files, unless explicitly told to work on directories
+    unless options[:prune_directories]
+      next unless entry.file?
+    end
 
     # allways keep newest backup
     unless last
-      last_kept = last = file
+      last_kept = last = entry
       next
     end
 
     [:daily, :weekly, :monthly].each do |interval|
 
-      # mtime of file is within setting for interval
-      if $config[:keep][interval] and file.mtime >= $config[:keep][interval]
+      # mtime of file/entry is within setting for interval
+      if $config[:keep][interval] and entry.mtime >= $config[:keep][interval]
         max_age = case interval
                   when :daily
                     Constants::Time::DAY
@@ -54,8 +54,8 @@ $config[:targets].each do |target, options|
                     raise
                   end
 
-        # still within max_age, try next file
-        if (last_kept.mtime - file.mtime) <= max_age
+        # still within max_age, try next file/entry
+        if (last_kept.mtime - entry.mtime) <= max_age
           if last != last_kept
             Log.warn("#{interval} delete: #{last}")
             last.delete
@@ -66,8 +66,8 @@ $config[:targets].each do |target, options|
             #Log.info("#{interval} keep: #{last}")
             last_kept = last
         end
-        # update pointer to last file object
-        last = file
+        # update pointer to last file/entry object
+        last = entry
         # avoid going into next interval
         break
       end

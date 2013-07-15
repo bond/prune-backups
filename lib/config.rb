@@ -22,7 +22,7 @@ end.parse!
 
 begin
   yaml = Hash[YAML.load_file(options[:configfile])]
-  yaml.delete(:configfile)
+  yaml.delete(:configfile) # don't read configfile setting from configfile
   options.merge!(yaml)
 rescue Exception => e
   Log.fatal("Unable to load config (YAML) from '#{options[:configfile]}': #{e.message}")
@@ -64,7 +64,8 @@ match = 0
 
     # When the period of daily backups stop, program will start 
     # considering weekly, after weekly monthly, etc..
-    # We help the program by converting the time formats into dates it can match against.
+    # We help the program by converting the time formats into dates it can match against. 
+    # The date(s) will be the oldest date (back in time), where the period is valid.
 
     distance, type = $1.to_i, $2 # from regex above
 
