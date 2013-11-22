@@ -58,7 +58,7 @@ $config[:targets].each do |target, options|
         if (last_kept.mtime - file.mtime) <= max_age
           if last != last_kept
             Log.warn("#{interval} delete: #{last}")
-            last.delete
+            last.delete unless $config[:dry_run]
           end
 
         # over max_age, use last

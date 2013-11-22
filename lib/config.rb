@@ -4,12 +4,13 @@ require 'yaml'
 
 default_options = {
   :color => true,
-  :verbose => false,
+  :verbose => nil,
   :configfile => '/etc/prune-backups.yml',
   :keep => {
     :daily => '7d',
     :weekly => '1y',
-  }
+  },
+  :dry_run => nil,
 }
 
 options = default_options
@@ -18,12 +19,16 @@ OptionParser.new do |opts|
   opts.banner = "Usage: syncagent.rb [options]"
   opts.on('-v', '--verbose', 'Run verbosely') { options[:verbose] = true }
   opts.on('-f', '--configfile PATH', String, 'Set config file') {|path| options[:configfile] = path }
+  opts.on('--dry-run', 'Don\'t actually prune files') { options[:dry_run] = true }
 end.parse!
 
 begin
   yaml = Hash[YAML.load_file(options[:configfile])]
+
+  # Preserve current configuratin option
   yaml.delete(:configfile)
   options.merge!(yaml)
+
 rescue Exception => e
   Log.fatal("Unable to load config (YAML) from '#{options[:configfile]}': #{e.message}")
   exit(false)
