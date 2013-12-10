@@ -28,10 +28,7 @@ $config[:targets].each do |target, options|
   # make sure the files are sorted first (newest first)
   Pathname.new(target).each_child.sort{|a, b| b.mtime <=> a.mtime }.each do |entry|
 
-    # only work with files, unless explicitly told to work on directories
-    unless options[:prune_directories]
-      next unless entry.file?
-    end
+    next unless entry.file?
 
     # allways keep newest backup
     unless last
