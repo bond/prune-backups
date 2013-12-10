@@ -4,7 +4,8 @@ require 'yaml'
 
 default_options = {
   :color => true,
-  :verbose => nil,
+  :verbose => false,
+  :dryrun => false,
   :configfile => '/etc/prune-backups.yml',
   :keep => {
     :daily => '7d',
@@ -18,6 +19,7 @@ options = default_options
 OptionParser.new do |opts|
   opts.banner = "Usage: syncagent.rb [options]"
   opts.on('-v', '--verbose', 'Run verbosely') { options[:verbose] = true }
+  opts.on('--dry-run', 'Do not delete anything') { options[:dryrun] = false }
   opts.on('-f', '--configfile PATH', String, 'Set config file') {|path| options[:configfile] = path }
   opts.on('--dry-run', 'Don\'t actually prune files') { options[:dry_run] = true }
 end.parse!
@@ -25,8 +27,7 @@ end.parse!
 begin
   yaml = Hash[YAML.load_file(options[:configfile])]
 
-  # Preserve current configuratin option
-  yaml.delete(:configfile)
+  yaml.delete(:configfile) # don't read configfile setting from configfile
   options.merge!(yaml)
 
 rescue Exception => e
@@ -64,12 +65,13 @@ match = 0
       exit(false)
     end
 
-    # The program will only consider one resolution at a time, 
-    # this means as long as it's doing daily, weekly is not considered. 
+    # The program will only consider one resolution at a time,
+    # this means as long as it's doing daily, weekly is not considered.
 
-    # When the period of daily backups stop, program will start 
+    # When the period of daily backups stop, program will start
     # considering weekly, after weekly monthly, etc..
     # We help the program by converting the time formats into dates it can match against.
+    # The date(s) will be the oldest date (back in time), where the period is valid.
 
     distance, type = $1.to_i, $2 # from regex above
 
@@ -86,13 +88,13 @@ match = 0
       years = distance % 12
       months = distance - (years * 12)
       options[:keep][interval] = Time.new(now.year - years, now.month - months, now.day, now.hour, now.min, now.sec)
-      
+
     when 'w'
         options[:keep][interval] = now - (distance * 7 * 24 * 60 * 60) # subtract weeks
-      
+
     when 'd'
         options[:keep][interval] = now - (distance * 24 * 60 * 60) # subtract days
-      
+
     else
       Log.fatal("Unsupported distance '#{distance}' for 'keep' setting")
       exit(false)
